@@ -9,7 +9,7 @@ class Reposistory
 private:
 	vector<Image> images;
 	Editor editor1;
-	int chosen_image;//która fotka
+	int chosen_image;//ktï¿½ra fotka
 	
 public:
 	Reposistory();

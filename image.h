@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+using std::vector, std::string;
 class Image
 {
 protected:
