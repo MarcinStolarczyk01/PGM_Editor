@@ -4,6 +4,7 @@ using namespace std;
 
 Reposistory::Reposistory(){
 	chosen_image = -1;
+	images.reserve(20);
 }
 
 int Reposistory::LoadImage(){
@@ -45,8 +46,10 @@ int Reposistory::LoadImage(){
 				images[images.size() - 1].name = name;
 				file >> images[images.size() - 1].width >> images[images.size() - 1].length;
 				file >> images[images.size() - 1].shading;
+				images[images.size() - 1].pixels.reserve(images[images.size() - 1].length);
 				for (int k = 0; k < images[images.size() - 1].length; ++k){
 					vector<int> temp;
+					temp.reserve(images[images.size() - 1].width);
 					for (int j = 0; j < images[images.size() - 1].width; ++j){
 						int tmp_x = 0;
 						file >> tmp_x;
