@@ -14,7 +14,7 @@ protected:
 	vector<vector<int>> pixels;
 
 public:
-	friend class Reposistory;
+	friend class Repository;
 	Image();
 	void SetWidth(int _width);
 	void SetLenght(int _length);

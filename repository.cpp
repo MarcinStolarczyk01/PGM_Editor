@@ -2,12 +2,12 @@
 #include <fstream>
 using namespace std;
 
-Reposistory::Reposistory(){
+Repository::Repository(){
 	chosen_image = -1;
 	images.reserve(20);
 }
 
-int Reposistory::LoadImage(){
+int Repository::LoadImage(){
 	ifstream file;
 	string name;
 	name = GetNameOrQuit();
@@ -45,6 +45,9 @@ int Reposistory::LoadImage(){
 				AddImage();
 				images[images.size() - 1].name = name;
 				file >> images[images.size() - 1].width >> images[images.size() - 1].length;
+				if(file.failbit == true){
+					bool test = SkipComment(file);
+				}
 				file >> images[images.size() - 1].shading;
 				images[images.size() - 1].pixels.reserve(images[images.size() - 1].length);
 				for (int k = 0; k < images[images.size() - 1].length; ++k){
@@ -62,7 +65,7 @@ int Reposistory::LoadImage(){
 		return 0;
 }
 
-string Reposistory::SameNamed(string _name, int _samenames){
+string Repository::SameNamed(string _name, int _samenames){
 	string name_tmp = _name;
 	int pic_nr = FindInLibrary(_name), range = 0;
 
@@ -82,19 +85,19 @@ string Reposistory::SameNamed(string _name, int _samenames){
 	else return "negative";//pomysl o try throw catch
 }
 
-void Reposistory::AddImage(){
+void Repository::AddImage(){
 	Image PICTURE;
 	images.push_back(PICTURE);
 }
 
-void Reposistory::ShowLoadedImages(){
+void Repository::ShowLoadedImages(){
 	for (int i = 0; i < images.size(); i++){
 		if (i == chosen_image) cout << images[i].GetName() << "*" << endl;
 		else cout << images[i].GetName() << endl;
 	}
 }
 
-int Reposistory::SaveImage(){
+int Repository::SaveImage(){
 	if (chosen_image < 0){
 		cout << "No active image or no images in library" << endl;
 		system("pause");
@@ -121,7 +124,7 @@ int Reposistory::SaveImage(){
 	return 0;
 }
 
-void Reposistory::SetActive(){
+void Repository::SetActive(){
 	if (images.size() < 1) return;//tu powinno rzuca� wyj�tek
 	else if (images.size() == 1){
 		chosen_image = 0;
@@ -137,7 +140,7 @@ void Reposistory::SetActive(){
 	}
 }
 
-int Reposistory::FindInLibrary(string _name){
+int Repository::FindInLibrary(string _name){
 	bool found = false;
 
 	for (int image_NR = 0; image_NR < images.size(); ++image_NR){
@@ -149,7 +152,7 @@ int Reposistory::FindInLibrary(string _name){
 	return -1;
 }
 
-void Reposistory::Menu(){
+void Repository::Menu(){
 	char choice;
 
 	while (1){
@@ -206,7 +209,7 @@ void Reposistory::Menu(){
 	}
 }
 
-string Reposistory::GetUsersName(){
+string Repository::GetUsersName(){
 	string tmp_name;
 	while (1){
 		cout << "Save the image as: ";
@@ -214,13 +217,13 @@ string Reposistory::GetUsersName(){
 		if (cin.fail() == true){
 			cout << "Try again" << endl;
 			cin.clear();
-			cin.ignore(256, '/n');
+			cin.ignore(256, '\n');
 		}
 		else return tmp_name;
 	}
 }
 
-string Reposistory::GetNameOrQuit(){
+string Repository::GetNameOrQuit(){
 	string name;
 	while (1){
 		cout << "Give the name or press '1' to exit:" << endl;
@@ -229,13 +232,13 @@ string Reposistory::GetNameOrQuit(){
 		if (cin.fail() == true){
 			cout << "Try again" << endl;
 			cin.clear();
-			cin.ignore(256, '/n');
+			cin.ignore(256, '\n');
 		}
 		else return name;
 	}
 }
 
-void Reposistory::DeleteImage(){
+void Repository::DeleteImage(){
 	if (chosen_image == -1){
 		cout << "Set Image as 'active'" << endl;
 		system("pause");
@@ -264,7 +267,7 @@ void Reposistory::DeleteImage(){
 	}
 }
 
-void Reposistory::Edit(){
+void Repository::Edit(){
 	if (chosen_image == -1){
 		cout << "Set Image as 'active'" << endl;
 		system("pause");
@@ -354,4 +357,21 @@ void Reposistory::Edit(){
 		}
 	}
 	system("cls");
+}
+
+bool Repository::SkipComment(std::ifstream& _file){
+	int helpfulint = 0, readto = 0;
+	_file.seekg(-1, std::ios::cur);
+	_file>>helpfulint;
+	if(_file.badbit == true){
+				return false;
+	}
+	else if(helpfulint == '#'){
+			while(_file.failbit == true){
+				_file>>readto;
+			}
+			_file.seekg(-1, std::ios::cur);
+		}
+	else return false;
+	return true;
 }

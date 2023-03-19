@@ -4,7 +4,7 @@
 #include "editor.h"
 #include <vector>
 
-class Reposistory
+class Repository
 {
 private:
 	vector<Image> images;
@@ -12,7 +12,7 @@ private:
 	int chosen_image;//kt�ra fotka
 	
 public:
-	Reposistory();
+	Repository();
 	int LoadImage();
 	int SaveImage();
 	void Menu();
@@ -21,6 +21,7 @@ public:
 	void ShowLoadedImages();
 	void SetActive();
 	void DeleteImage();
+	bool SkipComment(std::ifstream& _file);
 	int FindInLibrary(string _name);
 	string SameNamed(string _name, int _samenames);
 	string GetNameOrQuit();
