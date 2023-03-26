@@ -9,7 +9,7 @@ class Repository
 private:
 	vector<Image> images;
 	Editor editor1;
-	int chosen_image;//kt�ra fotka
+	int chosen_image;//kt�ra fotka - wow ten komentzrz widac
 	
 public:
 	Repository();
@@ -21,9 +21,9 @@ public:
 	void ShowLoadedImages();
 	void SetActive();
 	void DeleteImage();
-	bool SkipComment(std::ifstream& _file);
+	bool SkipComment(std::ifstream& _file, int* _current_posision);
 	int FindInLibrary(string _name);
 	string SameNamed(string _name, int _samenames);
 	string GetNameOrQuit();
-	string GetUsersName();
+	string GetPictureName();
 };

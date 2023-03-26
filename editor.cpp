@@ -41,9 +41,11 @@ void Editor::Reverse(){
 void Editor::Turn90(){
 	vector<vector<int>> pix_original = picture->GetPixels();
 	vector<vector<int>> pix_tmp;
+	pix_tmp.reserve(picture->GetWidth());
 
 	for (int i = 0; i < picture->GetWidth(); ++i){
 		vector<int> tmp;
+		tmp.reserve(picture->GetLenght());
 		for (int j = picture->GetLenght() - 1; j >= 0; --j){
 			tmp.push_back(pix_original[j][i]);
 		}
@@ -55,11 +57,11 @@ void Editor::Turn90(){
 	picture->SetPixels(pix_tmp);
 }
 
-void Editor::Noise(int _noiselvl){
+void Editor::Noise(int _noise_lvl){
 	vector<vector<int>> pix_tmp = picture->GetPixels();
 	int lenght, width, shading_tmp;
 	int resolution = picture->GetLenght() * picture->GetWidth();
-	int max_i = round(_noiselvl*resolution/100);
+	int max_i = round(_noise_lvl*resolution/100);
 	
 	for (int i = 0; i < max_i; ++i){
 		lenght = rand() % (picture->GetLenght() - 1);
@@ -82,7 +84,7 @@ void Editor::Filter(){
 	picture->SetPixels(pix_tmp);
 }
 
-void Editor::ChangeProportions(int _choice){
+void Editor::ChangeProportions(char _choice){
 	vector<vector<int>> pix_tmp;
 	vector<vector<int>> pix_original = picture->GetPixels();
 	int lenght = 0, width = 0;
@@ -92,9 +94,7 @@ void Editor::ChangeProportions(int _choice){
 
 	case '1':{		//4by3
 		if (abs((picture->GetLenght() / 3) - (picture->GetWidth() / 4)) < 2){
-			cout << "This Image is already 16 by 9" << endl;
-			system("pause");
-			return;
+			throw logic_error("The Image is already 4 by 3.");
 		}
 		
 		if (picture->GetLenght() / 3 > picture->GetWidth() / 4){
@@ -114,9 +114,7 @@ void Editor::ChangeProportions(int _choice){
 
 	case '2':{//16by9
 		if (abs((picture->GetLenght() / 9) - (picture->GetWidth() / 16)) < 2){
-			cout << "This Image is already 16 by 9" << endl;
-			system("pause");
-			return;
+			throw logic_error("The Image is already 16 by 9.");
 		}
 
 		if (picture->GetLenght() / 9 > picture->GetWidth() / 16){
@@ -136,10 +134,8 @@ void Editor::ChangeProportions(int _choice){
 
 	case '3':{//square
 	
-		if (abs(picture->GetLenght()) - (picture->GetWidth()) < 2){
-			cout << "This Image is already 1 by 1" << endl;
-			system("pause");
-			return;
+		if (abs((picture->GetLenght()) - (picture->GetWidth())) < 2){
+			throw logic_error("The Image is already 1 by 1.\n");
 		}
 
 		if (picture->GetLenght() > picture->GetWidth()){

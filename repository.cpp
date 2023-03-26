@@ -14,39 +14,52 @@ int Repository::LoadImage(){
 
 	if (name == "q") return 0;
 
-		//mamy ju� nazw� pliku
+		//mamy juz nazwa pliku
 		file.open(name);
 		if (!file.good()){
-			cout << "Ohh...We cant find such a file\n";
 			file.close();
-			system("pause");
-			return 2;//b��d typu 2
+			throw logic_error("Error while opening the file. No such a file or perrmision is denied.");//to złap
 		}
 		else{
-			int samenames = 1;
+			int same_named = 1;
 			do{
-				string name_tmp = SameNamed(name, samenames);
+				string name_tmp = SameNamed(name, same_named);
 				if (name_tmp == "negative") break;
 				else{
 					name = name_tmp;
-					samenames++;
+					same_named++;
 				}
 			} while (1);
 
-			string type;
-			getline(file, type);
-			if (type.compare("P2") != 0){ //czy to dobry format?
-			
-				cout << "WRONG FILE TYPE!" << endl;
-				system("pause");
-				return 1;//b��d typu 1
+			string file_type;
+			try{
+				file>>file_type;
 			}
-			else{ //uda�o si�, wi�c czytaj z pliku
+			catch (ifstream::failure& e){
+				file.close();
+				cout<<"INFO: Can't load the file! Wrong type or damaged file."<<e.what();
+			}			
+			if (file_type.compare("P2") != 0){ 					//czy to dobry format?
+				file.close();
+				throw logic_error("Incorrect file type!");
+			}
+			else{
+				 //udalo sie, wiec czytaj z pliku
 				AddImage();
 				images[images.size() - 1].name = name;
 				file >> images[images.size() - 1].width >> images[images.size() - 1].length;
-				if(file.failbit == true){
-					bool test = SkipComment(file);
+				if(!file.good()){
+					int current_posision = 2;
+					do{
+						bool iscomment = SkipComment(file, &current_posision);
+						if(!iscomment){
+							file.close();
+							images.pop_back();
+							throw logic_error("Incorrect data in file!");		//rzuć wyjatek i podaj informacje 
+						}
+					else file >> images[images.size() - 1].width >> images[images.size() - 1].length;
+					} while(!file.good());
+					//delete current_posision;
 				}
 				file >> images[images.size() - 1].shading;
 				images[images.size() - 1].pixels.reserve(images[images.size() - 1].length);
@@ -60,34 +73,52 @@ int Repository::LoadImage(){
 					}
 					images[images.size() - 1].pixels.push_back(temp);
 				}
+				file.close();
 			}
 		}
 		return 0;
 }
 
-string Repository::SameNamed(string _name, int _samenames){
+string Repository::SameNamed(string _name, int _same_named){
 	string name_tmp = _name;
 	int pic_nr = FindInLibrary(_name), range = 0;
 
-	if(_samenames > 1) range = 1 + _samenames;
+	if(_same_named > 1) range = 1 + _same_named;
 
 	if (pic_nr != -1){
 		for (int i = _name.size(); i > _name.size() - 4 - range; --i){
 			name_tmp.pop_back();
 		}
 		name_tmp += "(";
-		for (int i = 0; i < _samenames; ++i){
+		for (int i = 0; i < _same_named; ++i){
 			name_tmp.push_back('.');
 		}
 		name_tmp += ").pgm";
 		return name_tmp;
 	}
-	else return "negative";//pomysl o try throw catch
+	return "negative";
 }
 
 void Repository::AddImage(){
 	Image PICTURE;
 	images.push_back(PICTURE);
+}
+
+bool Repository::SkipComment(std::ifstream& _file, int* _current_posision){
+	_file.clear();
+	int helpfulint = 0;		
+	string sign, bufor;				//WNIOSEK: Jezeli ktoras z flag jest podniesiona to nie da sie zmienic pozycji wskaxnika w pliku!!!!!
+	_file.seekg(*_current_posision, std::ios::beg);
+	_file>>sign;
+	if(_file.bad()){
+		return false;
+	}
+	else if(sign[0] == '#'){
+			getline(_file, bufor);
+			*_current_posision = _file.tellg();
+		}
+	else return false;
+	return true;
 }
 
 void Repository::ShowLoadedImages(){
@@ -99,53 +130,68 @@ void Repository::ShowLoadedImages(){
 
 int Repository::SaveImage(){
 	if (chosen_image < 0){
-		cout << "No active image or no images in library" << endl;
-		system("pause");
-		return 2; //tu powinno rzuca� wyj�tek
+		throw logic_error("No active image or no images in library.");
 	}
-	ofstream file1;
-	file1.open(GetUsersName());
-	if (!file1.good()){
-		cout << "Ups...Saving Failed\n";
-		file1.close();
-		system("pause");
-		return 2;//b��d typu 2
+	ofstream file;
+	file.open(GetPictureName());
+	if (!file.good()){
+		file.close();
+		throw logic_error("Unexpected error while saving: we can't create a file.");
 	}
-	file1 << "P2\n";
-	file1 << images[chosen_image].width << " " << images[chosen_image].length << "\n";
-	file1 << images[chosen_image].shading << "\n";
+	file << "P2\n";
+	file << images[chosen_image].width << " " << images[chosen_image].length << "\n";
+	file << images[chosen_image].shading << "\n";
 	for (int k = 0; k < images[chosen_image].length; ++k){
 		for (int j = 0; j < images[chosen_image].width; ++j){
-			file1 << images[chosen_image].pixels[k][j] << " ";
+			file << images[chosen_image].pixels[k][j] << " ";
 		}
-		file1 << "\n";
+		file << "\n";
 	}
-	file1.close();
+	file.close();
 	return 0;
 }
 
 void Repository::SetActive(){
-	if (images.size() < 1) return;//tu powinno rzuca� wyj�tek
+	if (images.size() < 1){
+		throw logic_error("The Library is empty! Image must be loaded.");
+	}
 	else if (images.size() == 1){
 		chosen_image = 0;
 		return;
 	}
-	string name = GetNameOrQuit();
-	if (name != "q"){
-		if (FindInLibrary(name) != -1) chosen_image = FindInLibrary(name);
-		else{
-			cout << "No such a file in the library!" << endl;
-			system("pause");
+	else{
+		string name = GetNameOrQuit();
+		if (name != "q" && name != "Q"){
+			if (FindInLibrary(name) != -1) chosen_image = FindInLibrary(name);
+			else{
+				throw logic_error("No such a image in the Library.");
+			}
 		}
 	}
 }
 
-int Repository::FindInLibrary(string _name){
-	bool found = false;
+string Repository::GetNameOrQuit(){
+	string name;
+	while (1){
+		cout << "Give the name or press 'q' to exit:" << endl;
+		try{
+			cin >> name;
+			break;
+		}
+		catch(exception &){
+			cout << "INFO: Try again" << endl;
+			cin.clear();
+			cin.ignore(256, '\n');
+		}
+		if (name.compare("q") == 0 || name.compare("Q") == 0) return "q";
+		else break;
+	}
+	return name;
+}
 
+int Repository::FindInLibrary(string _name){
 	for (int image_NR = 0; image_NR < images.size(); ++image_NR){
 		if (_name.compare(images[image_NR].GetName()) == 0){
-			found = true;
 			return image_NR;
 		}
 	}
@@ -156,52 +202,80 @@ void Repository::Menu(){
 	char choice;
 
 	while (1){
-		system("cls");
-		cout << "Library: " << endl;
+		cout << "\n\nLibrary: " << endl;
 		ShowLoadedImages();
-		cout << "\n____MENU____" << endl;
-		cout << "1. Set active image" << endl;
-		cout << "2. Load image" << endl;
-		cout << "3. Edit" << endl;
-		cout << "4. Save" << endl;
-		cout << "5. Delete" << endl;//zbugowane
-		cout << "6. Exit" << endl;
-		//pomijanie komentzrzy i odszumianie
+		cout << "\n|--------MENU---------|\n"; 
+		cout << "| 1. Set active image |\n";
+		cout << "| 2. Load image       |\n";
+		cout << "| 3. Edit             |\n"; 
+		cout << "| 4. Save             |\n"; 
+		cout << "| 5. Delete           |\n";
+		cout << "|---------------------|\n"; 
+		cout << "| Q - Exit            |\n";
+		cout << "|---------------------|\n: ";
 		cin >> choice;
 
 		switch (choice){
 
-		case '1':{
-			SetActive();
+		case '1':
+			try{
+				SetActive();
+				break;
+			}
+			catch (logic_error & e){
+				cout<<"INFO: "<<e.what();
+			}
 			break;
-		}
-
-		case '2':{
-			LoadImage();
+		
+		case '2':
+			try{
+				LoadImage();
+				break;
+			}
+			catch(logic_error & e){cout<<"INFO: "<<e.what();}
+			catch(...){cout<<"INFO: Unknown exception thrown.";}
 			break;
-		}
 
-		case '3':{
-			Edit();
+		case '3':
+			try{
+				Edit();
+				break;
+			}
+			catch (logic_error & e){cout<<"INFO: "<<e.what();}
 			break;
-		}
-
-		case '4':{
+		
+		case '4':
+			try{
 			SaveImage();
 			break;
-		}
+			}
+			catch (logic_error & e){cout<<"INFO: "<<e.what();}
+			break;
 
-		case '5':{
+		case '5':
 			DeleteImage();
 			break;
+		
+		case 'Q':
+		case 'q':
+		{
+			do{
+				char choice2;
+				cout<<"INFO: Are you sure? All unsaved images will be lost."<<endl;
+				cout << "y - YES" << endl;
+				cout << "n - NO" << endl;
+				cin>>choice2;
+				if(choice2 == 'y' || choice2 == 'Y') return;
+				else if(choice2 != 'n' && choice2 != 'N') break; 
+				else{
+					cin.clear();
+					cin.ignore(256, '\n');
+				}
+			}while(1);
+			break;
 		}
-
-		case '6':{
-			return;
-		}
-
 		default:{
-			cout << "Choose the right option!" << endl;
+			cout << "INFO: Choose right option!" << endl;
 			cin.clear();
 			cin.ignore(256, '\n');
 		}
@@ -209,13 +283,13 @@ void Repository::Menu(){
 	}
 }
 
-string Repository::GetUsersName(){
+string Repository::GetPictureName(){
 	string tmp_name;
 	while (1){
 		cout << "Save the image as: ";
 		cin >> tmp_name;
-		if (cin.fail() == true){
-			cout << "Try again" << endl;
+		if (!cin.good()){
+			cout << "Try again..." << endl;
 			cin.clear();
 			cin.ignore(256, '\n');
 		}
@@ -223,44 +297,26 @@ string Repository::GetUsersName(){
 	}
 }
 
-string Repository::GetNameOrQuit(){
-	string name;
-	while (1){
-		cout << "Give the name or press '1' to exit:" << endl;
-		cin >> name;
-		if (name.compare("1") == 0) return "q";//pownien by� wyj�tek
-		if (cin.fail() == true){
-			cout << "Try again" << endl;
-			cin.clear();
-			cin.ignore(256, '\n');
-		}
-		else return name;
-	}
-}
-
 void Repository::DeleteImage(){
 	if (chosen_image == -1){
-		cout << "Set Image as 'active'" << endl;
-		system("pause");
+		cout << "INFO: Set Image in 'active' mode." << endl;
 		return;
 	}
 
 	char answer;
 	while (1){
-		system("cls");
 		cout << "Are you sure you want to delete: " << images[chosen_image].GetName() << "?" << endl;
 		cout << "y - YES" << endl;
 		cout << "n - NO" << endl;
 		cin >> answer;
 
-		if (answer == 'n') return;
-		else if (answer == 'y') break;
+		if (answer == 'n' || answer == 'N') return;
+		else if (answer == 'y' || answer == 'Y') break;
 		else{
 			cin.clear();
 			cin.ignore(256, '\n');
 		}
 	}
-
 	if (chosen_image != -1){
 		images.erase(images.begin() + chosen_image);
 		chosen_image = -1;
@@ -269,23 +325,20 @@ void Repository::DeleteImage(){
 
 void Repository::Edit(){
 	if (chosen_image == -1){
-		cout << "Set Image as 'active'" << endl;
-		system("pause");
-		return; //tu powinno rzuca� wyj�tek
+		throw logic_error("To edit image set it in 'active' mode.");
 	}
 	editor1.SetPicture(&images[chosen_image]);
 
 	char choice;
 	while (1){
-		system("cls");
-		cout << "OPTIONS" << endl;
+		cout << "\n\n\n\nEDITE OPTIONS" << endl;
 		cout << "1. Negative" << endl;
 		cout << "2. Mirror reflection" << endl;
 		cout << "3. Turn 90 degrees" << endl;
 		cout << "4. Noise" << endl;
 		cout << "5. Filtrer noise" << endl;
 		cout << "6. Change proportions" << endl;
-		cout << "7. Exit Editor" << endl;
+		cout << "\n7. Exit Editor" << endl;
 		cin >> choice;
 		switch (choice){
 		case '1':{
@@ -304,17 +357,20 @@ void Repository::Edit(){
 		}
 
 		case '4':{
-			int noiselvl;
+			int noise_lvl;
 			while (1){
-				cout << "Set noise level(in %)" << endl;
-				cin >> noiselvl;
-				if (cin.good() == false || noiselvl < 0 || noiselvl > 100){
+				cout << "Set noise level(in %)." << endl;
+				cin >> noise_lvl;
+				if (!cin.good() || noise_lvl < 0 || noise_lvl > 100){
 					cin.clear();
 					cin.ignore(256, '\n');
+					cout<<"INFO: Noise lvl should in 0 - 100 range."<<endl;
 				}
-				else break;
+				else {
+					editor1.Noise(noise_lvl);
+					break;
+				}
 			}
-			editor1.Noise(noiselvl);
 			break;
 		}
 
@@ -337,8 +393,11 @@ void Repository::Edit(){
 				}
 				else if (choice1 == '4') break;
 				else {
+					try{
 					editor1.ChangeProportions(choice1);
 					break;
+					}
+					catch (logic_error & e){cout<<"INFO: "<<e.what();}
 				}
 			}
 			break;
@@ -349,29 +408,11 @@ void Repository::Edit(){
 		}
 
 		default:{
-			cout << "Choose the right option!" << endl;
+			cout << "INFO: Choose a right option!" << endl;
 			cin.clear();
 			cin.ignore(256, '\n');
 			break;
 		}
 		}
 	}
-	system("cls");
-}
-
-bool Repository::SkipComment(std::ifstream& _file){
-	int helpfulint = 0, readto = 0;
-	_file.seekg(-1, std::ios::cur);
-	_file>>helpfulint;
-	if(_file.badbit == true){
-				return false;
-	}
-	else if(helpfulint == '#'){
-			while(_file.failbit == true){
-				_file>>readto;
-			}
-			_file.seekg(-1, std::ios::cur);
-		}
-	else return false;
-	return true;
 }
