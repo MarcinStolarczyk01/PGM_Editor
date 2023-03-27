@@ -8,10 +8,13 @@ PGM_Editor includes 3 Classes(UML diagram will be uploaded soon)
 * Repository
   Main class which is storage for pictures. It has permission to Editor and basic exception controll. Repository has 'Menu' method which has implemented CUI.
 * Editor
-  Name says it all - it contains methods like Reverse, 
-*Image
+  After giving pointer on chosen Image it can change dimensions or rewrite pixels in oreder to make wisual changes.
+  In Editor you can find method "Noise()" this one is useless becouse we don't want to make our image blury but I jut wanted to write filter() and use 3 by 3 window method to clarifi image.
+  becouse we are working on 
+* Image
   It has attributes describing .pgm file like it's name, dimensions, grey scale array of pixels.  
 
+I hope for your feedback and have a nice day!
 
 Future Features:
 - comments to every function
