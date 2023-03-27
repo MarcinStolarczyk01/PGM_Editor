@@ -10,21 +10,20 @@ Repository::Repository(){
 int Repository::LoadImage(){
 	ifstream file;
 	string name;
-	name = GetNameOrQuit();
-
-	if (name == "q") return 0;
-
-		//mamy juz nazwa pliku
+	name = GetNameOrQuit(); //geting file name from user by console, if users quited retured				// string is 'q'
+	if (name == "q") return 0;//user quited so return to menu
+		
 		file.open(name);
 		if (!file.good()){
 			file.close();
 			throw logic_error("Error while opening the file. No such a file or perrmision is denied.");//to złap
 		}
-		else{
+		//if the file was opened succesfuly: 
+		else{	
 			int same_named = 1;
 			do{
-				string name_tmp = SameNamed(name, same_named);
-				if (name_tmp == "negative") break;
+				string name_tmp = SameNamed(name, same_named);	//this loop checks if files don't have the same name
+				if (name_tmp == "negative") break;				//if they do it changes them by adding (.)
 				else{
 					name = name_tmp;
 					same_named++;
@@ -37,33 +36,31 @@ int Repository::LoadImage(){
 			}
 			catch (ifstream::failure& e){
 				file.close();
-				cout<<"INFO: Can't load the file! Wrong type or damaged file."<<e.what();
+				cout<<"INFO: Can't load the file! Wrong type or file is damaged."<<e.what();
 			}			
-			if (file_type.compare("P2") != 0){ 					//czy to dobry format?
+			if (file_type.compare("P2") != 0){ 					//checking if .pgm format is "P2"
 				file.close();
 				throw logic_error("Incorrect file type!");
 			}
-			else{
-				 //udalo sie, wiec czytaj z pliku
+			else{	//file opened and type is correct so read data
 				AddImage();
 				images[images.size() - 1].name = name;
 				file >> images[images.size() - 1].width >> images[images.size() - 1].length;
 				if(!file.good()){
-					int current_posision = 2;
+					int current_posision = 2;									//saving information about pisision if the file
 					do{
-						bool iscomment = SkipComment(file, &current_posision);
+						bool iscomment = SkipComment(file, &current_posision);	//2nd line can have comment inside
 						if(!iscomment){
 							file.close();
 							images.pop_back();
-							throw logic_error("Incorrect data in file!");		//rzuć wyjatek i podaj informacje 
+							throw logic_error("Incorrect data in file!");		//error detected or com without '#'
 						}
-					else file >> images[images.size() - 1].width >> images[images.size() - 1].length;
+					else file >> images[images.size() - 1].width >> images[images.size() - 1].length;	//read diamentions again
 					} while(!file.good());
-					//delete current_posision;
 				}
 				file >> images[images.size() - 1].shading;
-				images[images.size() - 1].pixels.reserve(images[images.size() - 1].length);
-				for (int k = 0; k < images[images.size() - 1].length; ++k){
+				images[images.size() - 1].pixels.reserve(images[images.size() - 1].length);	//reserving capacity for vector so we r sure that it wont realocate becouse of overflowing
+				for (int k = 0; k < images[images.size() - 1].length; ++k){	//writing pixels data into 2 diamention vector
 					vector<int> temp;
 					temp.reserve(images[images.size() - 1].width);
 					for (int j = 0; j < images[images.size() - 1].width; ++j){
@@ -105,19 +102,19 @@ void Repository::AddImage(){
 }
 
 bool Repository::SkipComment(std::ifstream& _file, int* _current_posision){
-	_file.clear();
+	_file.clear();			//reseting flags in order to read pionter posision in the file
 	int helpfulint = 0;		
-	string sign, bufor;				//WNIOSEK: Jezeli ktoras z flag jest podniesiona to nie da sie zmienic pozycji wskaxnika w pliku!!!!!
-	_file.seekg(*_current_posision, std::ios::beg);
+	string sign, bufor;	
+	_file.seekg(*_current_posision, std::ios::beg);	//seting posision to place where it was before reading filed
 	_file>>sign;
-	if(_file.bad()){
+	if(_file.bad()){	//checking some critical errors
 		return false;
 	}
-	else if(sign[0] == '#'){
+	else if(sign[0] == '#'){	//if comment is begining with # skip it
 			getline(_file, bufor);
 			*_current_posision = _file.tellg();
 		}
-	else return false;
+	else return false;			//but if it is not give feedback about damaged file
 	return true;
 }
 
@@ -317,13 +314,13 @@ void Repository::DeleteImage(){
 			cin.ignore(256, '\n');
 		}
 	}
-	if (chosen_image != -1){
+	if (chosen_image != -1){							
 		images.erase(images.begin() + chosen_image);
-		chosen_image = -1;
+		chosen_image = -1;								//so now no image is active 
 	}
 }
 
-void Repository::Edit(){
+void Repository::Edit(){	//secoud menu just for editing images, it has few simple options
 	if (chosen_image == -1){
 		throw logic_error("To edit image set it in 'active' mode.");
 	}

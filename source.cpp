@@ -3,10 +3,8 @@
 
 int main()
 {
-	//przydałoby się zabezpieczenie przed wczytywaniem zbyt dużych plikow
+	//starting the program, wish you fun!!!
 	Repository LIBRARY;
 	LIBRARY.Menu();
 	return 0;
 }
-
-

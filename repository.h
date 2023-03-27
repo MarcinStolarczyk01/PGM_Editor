@@ -1,15 +1,16 @@
 #pragma once
 #include <iostream>
+#include <vector>
 #include "image.h"
 #include "editor.h"
-#include <vector>
+
 
 class Repository
 {
 private:
-	vector<Image> images;
-	Editor editor1;
-	int chosen_image;//kt�ra fotka - wow ten komentzrz widac
+	vector<Image> images; //library of images
+	Editor editor1; //
+	int chosen_image; //posision of 'active' Image in images vector
 	
 public:
 	Repository();
