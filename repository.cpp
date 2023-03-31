@@ -51,8 +51,6 @@ int Repository::LoadImage(){
 					do{
 						bool iscomment = SkipComment(file, &current_posision);	//2nd line can have comment inside
 						if(!iscomment){
-							file.close();
-							images.pop_back();
 							throw logic_error("Incorrect data in file!");		//error detected or com without '#'
 						}
 					else file >> images[images.size() - 1].width >> images[images.size() - 1].length;	//read diamentions again
