@@ -1,4 +1,6 @@
-.vscode
+# VSCode
+**/.vscode/*
+# Build folder
 /out
 *.out
 *.o
