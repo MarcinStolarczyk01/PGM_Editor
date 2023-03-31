@@ -1,10 +1,17 @@
-#include "repository.h"
 #include <fstream>
+#include <algorithm>
+#include "repository.h"
+
 using namespace std;
 
 Repository::Repository(){
 	chosen_image = -1;
 	images.reserve(20);
+	my_editor = new Editor();
+}
+
+Repository::~Repository(){
+	delete my_editor;
 }
 
 int Repository::LoadImage(){
@@ -20,16 +27,6 @@ int Repository::LoadImage(){
 		}
 		//if the file was opened succesfuly: 
 		else{	
-			int same_named = 1;
-			do{
-				string name_tmp = SameNamed(name, same_named);	//this loop checks if files don't have the same name
-				if (name_tmp == "negative") break;				//if they do it changes them by adding (.)
-				else{
-					name = name_tmp;
-					same_named++;
-				}
-			} while (1);
-
 			string file_type;
 			try{
 				file>>file_type;
@@ -42,15 +39,28 @@ int Repository::LoadImage(){
 				file.close();
 				throw logic_error("Incorrect file type!");
 			}
-			else{	//file opened and type is correct so read data
+			else{	//file opened and type is correct so make new Image and read data into it
 				AddImage();
-				images[images.size() - 1].name = name;
+				//cut file's path
+				FilePathToName(&name);	//cutting off file path like ../../image.pgm to just a name image.pgm
+				//same names?
+				int same_named = 1;
+			do{
+				string name_tmp = SameNamed(name, same_named);	//this loop checks if files don't have the same name
+				if (name_tmp == "negative") break;				//if they do it changes them by adding (.)
+				else{
+					name = name_tmp;
+					same_named++;
+				}
+			} while (1);
 				file >> images[images.size() - 1].width >> images[images.size() - 1].length;
 				if(!file.good()){
 					int current_posision = 2;									//saving information about pisision if the file
 					do{
 						bool iscomment = SkipComment(file, &current_posision);	//2nd line can have comment inside
 						if(!iscomment){
+							file.close();
+							images.pop_back();
 							throw logic_error("Incorrect data in file!");		//error detected or com without '#'
 						}
 					else file >> images[images.size() - 1].width >> images[images.size() - 1].length;	//read diamentions again
@@ -69,6 +79,7 @@ int Repository::LoadImage(){
 					images[images.size() - 1].pixels.push_back(temp);
 				}
 				file.close();
+				images[images.size() - 1].name = name;
 			}
 		}
 		return 0;
@@ -85,13 +96,11 @@ string Repository::SameNamed(string _name, int _same_named){
 			name_tmp.pop_back();
 		}
 		name_tmp += "(";
-		for (int i = 0; i < _same_named; ++i){
-			name_tmp.push_back('.');
-		}
+		name_tmp += to_string(_same_named);
 		name_tmp += ").pgm";
 		return name_tmp;
 	}
-	return "negative";
+	else return "negative";
 }
 
 void Repository::AddImage(){
@@ -114,6 +123,20 @@ bool Repository::SkipComment(std::ifstream& _file, int* _current_posision){
 		}
 	else return false;			//but if it is not give feedback about damaged file
 	return true;
+}
+
+void Repository::FilePathToName(string* _name_with_path){
+	string name;
+	int coto = _name_with_path->size();//do usuniecia
+	for(int i = _name_with_path->size() - 1; i >= 0; --i){
+		if((*_name_with_path)[i] != '/'){
+			name.push_back((*_name_with_path)[i]);
+		}
+		else{
+			reverse(name.begin(), name.end());
+			*_name_with_path = name;
+		}
+	}
 }
 
 void Repository::ShowLoadedImages(){
@@ -320,9 +343,12 @@ void Repository::DeleteImage(){
 
 void Repository::Edit(){	//secoud menu just for editing images, it has few simple options
 	if (chosen_image == -1){
-		throw logic_error("To edit image set it in 'active' mode.");
+		throw logic_error("To edit the image set it in 'active' mode.");
 	}
-	editor1.SetPicture(&images[chosen_image]);
+	if (images.size() == 0){
+		throw logic_error("Library is empty. Load a image to modify it.");
+	}
+	my_editor->SetPicture(&images[chosen_image]);
 
 	char choice;
 	while (1){
@@ -337,24 +363,24 @@ void Repository::Edit(){	//secoud menu just for editing images, it has few simpl
 		cin >> choice;
 		switch (choice){
 		case '1':{
-			editor1.Negative();
+			my_editor->Negative();
 			break;
 		}
 
 		case '2':{
-			editor1.Reverse();
+			my_editor->Reverse();
 			break;
 		}
 
 		case '3':{
-			editor1.Turn90();
+			my_editor->Turn90();
 			break;
 		}
 
 		case '4':{
 			int noise_lvl;
 			while (1){
-				cout << "Set noise level(in %)." << endl;
+				cout << "Set noise level(in %): " << endl;
 				cin >> noise_lvl;
 				if (!cin.good() || noise_lvl < 0 || noise_lvl > 100){
 					cin.clear();
@@ -362,7 +388,7 @@ void Repository::Edit(){	//secoud menu just for editing images, it has few simpl
 					cout<<"INFO: Noise lvl should in 0 - 100 range."<<endl;
 				}
 				else {
-					editor1.Noise(noise_lvl);
+					my_editor->Noise(noise_lvl);
 					break;
 				}
 			}
@@ -370,7 +396,7 @@ void Repository::Edit(){	//secoud menu just for editing images, it has few simpl
 		}
 
 		case '5':{
-			editor1.Filter();
+			my_editor->Filter();
 			break;
 		}
 
@@ -389,7 +415,7 @@ void Repository::Edit(){	//secoud menu just for editing images, it has few simpl
 				else if (choice1 == '4') break;
 				else {
 					try{
-					editor1.ChangeProportions(choice1);
+					my_editor->ChangeProportions(choice1);
 					break;
 					}
 					catch (logic_error & e){cout<<"INFO: "<<e.what();}

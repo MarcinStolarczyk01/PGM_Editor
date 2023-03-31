@@ -5,7 +5,7 @@
              "name": "(gdb) Launch",
              "type": "cppdbg",
              "request": "launch",
-             "program": "${workspaceFolder}/PGM_Editor",
+             "program": "${workspaceFolder}/out/build/Editor",
              "args": [],
              "stopAtEntry": false,
              "cwd": "${workspaceFolder}",
